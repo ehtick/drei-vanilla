@@ -75,6 +75,7 @@ import { pcss, ... } from '@pmndrs/vanilla'
         <li><a href="#portals">Portals</a></li>
           <ul>
             <li><a href="#meshportalmaterial">MeshPortalMaterial</a></li>
+            <li><a href="#fisheye">Fisheye</a></li>
           </ul>
       </ul>
     </td>
@@ -1057,4 +1058,56 @@ const portalMaterial = new MeshPortalMaterial({
 portalMesh = new THREE.Mesh(portalGeometry, portalMaterial)
 meshPortalMaterialApplySDF(portalMesh, 512, renderer) // 512 is SDF texture resolution
 scene.add(portalMesh)
+```
+
+### Fisheye
+
+[![storybook](https://img.shields.io/badge/-storybook-%23ff69b4)](https://pmndrs.github.io/drei-vanilla/?path=/story/portals-fisheye--fisheye-story)
+
+[drei counterpart](https://drei.docs.pmnd.rs/portals/fisheye)
+
+```ts
+export type FisheyeProps = {
+  /** Zoom factor, 0..1, default:0 */
+  zoom?: number
+  /** Number of segments, default: 64 */
+  segments?: number
+  /** Cubemap resolution default: 896 */
+  resolution?: number
+}
+```
+
+This class will take over rendering. It captures the scene into a cubemap from the camera's pov which is then projected onto a sphere. The sphere is then rendered to fill the screen. You can lower the resolution to increase performance. Six renders per frame are necessary to construct a full fisheye view, and since each face of the cubemap only takes a portion of the screen, full resolution is not necessary. You can also reduce the number of segments of the sphere (resulting in a more blocky sphere).
+
+Usage:
+
+```js
+const fishEye = new Fisheye()
+
+// on resize event
+// make sure onResize is called once before first frame is rendered
+onWindowResize(){
+  //...
+  fishEye.onResize(width, height)
+}
+
+// In animation loop, use fisheye.render() instead of renderer.render()
+renderer.setAnimationLoop(() => {
+  //...
+  controls.update() // if using controls
+
+  // Use fisheye's rendering instead of normal rendering
+  fishEye.render(renderer, scene, camera) // replaces: renderer.render(scene, camera)
+})
+
+// To raycast through fisheye distortion,
+// use computeRaycastRayDirection instead of raycaster.setFromCamera
+const pointer = new THREE.Vector2()
+raycast(){
+  //...
+  fishEye.computeRaycastRayDirection(raycaster, pointer)
+  const intersects = raycaster.intersectObjects(raycastMeshes)
+  //...
+}
+
 ```
